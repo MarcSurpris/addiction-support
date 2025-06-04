@@ -5,18 +5,23 @@ import os
 from flask_sqlalchemy import SQLAlchemy
 from models import db, Entry
 
+# Load environment variables
 load_dotenv()
 XAI_API_KEY = os.getenv("XAI_API_KEY")
 if not XAI_API_KEY:
     raise ValueError("XAI_API_KEY environment variable not set")
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///entries.db'
+# Use the External Database URL from Render
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL",
+                                                  "sqlite:///entries.db")  # Fallback to SQLite for local testing
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 
+# Create the database tables
 with app.app_context():
     db.create_all()
+
 
 def get_xai_response(user_input):
     messages = [
@@ -32,7 +37,7 @@ def get_xai_response(user_input):
         "Content-Type": "application/json"
     }
     payload = {
-        "model": "grok-3",
+        "model": "grok-3",  # Adjust based on xAI's available models
         "messages": messages,
         "temperature": 0.7,
         "max_tokens": 150
@@ -52,15 +57,18 @@ def get_xai_response(user_input):
             print("Response body:", e.response.text)
         return "I'm sorry, I'm having trouble responding right now. If you're struggling, please reach out to a professional for support."
 
+
 @app.route("/", methods=["GET", "POST"])
 def index():
     if request.method == "POST":
         addiction_type = request.form.get("addiction_type")
         description = request.form.get("description")
 
+        # Get xAI response
         user_input = f"I am struggling with {addiction_type}. Here's what I'm going through: {description}"
         xai_response = get_xai_response(user_input)
 
+        # Save to database
         entry = Entry(
             addiction_type=addiction_type,
             description=description,
@@ -71,9 +79,10 @@ def index():
 
         return redirect(url_for("index"))
 
+    # Display all entries
     entries = Entry.query.order_by(Entry.created_at.desc()).all()
     return render_template("index.html", entries=entries)
 
+
 if __name__ == "__main__":
     app.run(debug=True)
-

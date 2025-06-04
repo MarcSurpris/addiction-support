@@ -1,0 +1,22 @@
+# Python/Flask files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Environment files
+.env
+
+# SQLite database (for local testing)
+entries.db
+
+# Virtual environment (if you have one)
+.venv/
+venv/
+
+# macOS system files
+.DS_Store
+
+# Editor/IDE files
+.vscode/
+*.code-workspace
